@@ -21,6 +21,7 @@ import edu.cmu.sphinx.alignment.LongTextAligner;
 import edu.cmu.sphinx.alignment.USEnglishTokenizer;
 import edu.cmu.sphinx.api.*;
 import edu.cmu.sphinx.frontend.*;
+import edu.cmu.sphinx.frontend.endpoint.*;
 import edu.cmu.sphinx.frontend.util.*;
 import edu.cmu.sphinx.result.WordResult;
 import edu.cmu.sphinx.linguist.HMMSearchState;
@@ -70,6 +71,30 @@ public class SpeechTools {
     /////////////////////////////////
 
     /**
+     * Extracts speech classified data from an input stream.
+     * @param audioUrl url of audio file
+     * @return list of speech classified data
+     */
+    public static List<SpeechClassifiedData> getSpeechClassifiedData(URL audioUrl) throws Exception {
+        List<SpeechClassifiedData> out = new ArrayList<SpeechClassifiedData>();
+
+        Context context = getContext();
+        ConfigurationManager cm = context.getConfigurationManager();
+
+        FrontEnd frontEnd = cm.lookup("speechFrontEnd");
+        context.setSpeechSource(audioUrl.openStream());
+
+        Data data = null;
+        while ((data = frontEnd.getData()) != null) {
+            if (data instanceof SpeechClassifiedData) {
+                out.add((SpeechClassifiedData) data);
+            }
+        }
+        return out;
+    }
+
+
+    /**
      * Extracts data signals from an input stream.
      * @param audioUrl url of audio file
      * @return list of signals
@@ -78,13 +103,14 @@ public class SpeechTools {
         List<Signal> out = new ArrayList<Signal>();
 
         Context context = getContext();
-        context.setLocalProperty("trivialScorer->frontend", "liveFrontEnd");
+        ConfigurationManager cm = context.getConfigurationManager();
+
+        FrontEnd frontEnd = cm.lookup("liveFrontEnd");
         context.setSpeechSource(audioUrl.openStream());
-        FrontEnd frontEnd = context.getInstance(FrontEnd.class);
 
         Data data = null;
         while ((data = frontEnd.getData()) != null) {
-            if (data instanceof Signal) {
+            if (data instanceof Signal && !(data instanceof DataStartSignal) && !(data instanceof DataEndSignal)) {
                 out.add((Signal) data);
             }
         }
@@ -101,13 +127,10 @@ public class SpeechTools {
         List<FloatData> out = new ArrayList<FloatData>();
 
         Context context = getContext();
-        if (classifySpeech) {
-            context.setLocalProperty("trivialScorer->frontend", "unmarkedFrontEnd");
-        } else {
-            context.setLocalProperty("trivialScorer->frontend", "liveFrontEnd");
-        }
+        ConfigurationManager cm = context.getConfigurationManager();
+
+        FrontEnd frontEnd = cm.lookup((classifySpeech) ? "liveFrontEnd" : "unmarkedFrontEnd");
         context.setSpeechSource(audioUrl.openStream());
-        FrontEnd frontEnd = context.getInstance(FrontEnd.class);
 
         Data data = null;
         while ((data = frontEnd.getData()) != null) {
@@ -156,8 +179,12 @@ public class SpeechTools {
         String transcript = scanner.next();
         scanner.close();
 
+        Context context = getContext();
+        context.setLocalProperty("trivialScorer->frontend", "unmarkedFrontEnd");
+
         return new Alignment(getWordAlignment(audioUrl, transcript),
-                getSignals(audioUrl), getFeatures(audioUrl, false));
+                getSignals(audioUrl), getFeatures(audioUrl, false),
+                getSpeechClassifiedData(audioUrl));
     }
 
     /**

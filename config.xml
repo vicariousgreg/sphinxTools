@@ -23,6 +23,9 @@
 
   <property name="languageWeight" value="8.0"/>
 
+  <property name="acousticModelLocation" value="/audio/models/transcription/acoustic/models/en-us"/>
+  <property name="dictionaryLocation" value="/audio/models/transcription/dictionary/cmudict-en-us.dict"/>
+
 
 
   <!--            -->
@@ -303,7 +306,7 @@
   <!--            -->
   <component name="dictionary"
     type="edu.cmu.sphinx.linguist.dictionary.TextDictionary">
-    <property name="dictionaryPath" value=""/>
+    <property name="dictionaryPath" value="${dictionaryLocation}"/>
     <property name="fillerPath" value=""/>
     <property name="unitManager" value="unitManager"/>    
   </component>
@@ -320,7 +323,7 @@
 
   <component name="acousticModelLoader"
     type="edu.cmu.sphinx.linguist.acoustic.tiedstate.Sphinx3Loader">
-    <property name="location" value=""/>
+    <property name="location" value="${acousticModelLocation}"/>
     <property name="unitManager" value="unitManager"/>
     <property name="topGaussiansNum" value="4"/>
   </component>
@@ -353,15 +356,25 @@
     <propertylist name="pipeline">
       <item>dataSource </item>
       <item>dataBlocker </item>
-      <item>preemphasizer </item>
-      <item>windower </item>
-      <item>fft </item>
-      <item>autoCepstrum </item>
-      <item>batchCMN </item>
-      <item>featureExtraction </item>
-      <item>featureTransform </item>
+      <item>preemphasizer2 </item>
+      <item>windower2 </item>
+      <item>fft2 </item>
+      <item>autoCepstrum2 </item>
+      <item>batchCMN2 </item>
+      <item>featureExtraction2 </item>
+      <item>featureTransform2 </item>
     </propertylist>
   </component>
+
+  <!-- Frontend that dumps speech/non-speech classification -->
+  <component name="speechFrontEnd" type="edu.cmu.sphinx.frontend.FrontEnd">
+    <propertylist name="pipeline">
+      <item>dataSource </item>
+      <item>dataBlocker </item>
+      <item>speechClassifier </item>
+    </propertylist>
+  </component>
+
 
 
   <component name="dataSource"
@@ -382,30 +395,48 @@
 
   <component name="preemphasizer"
     type="edu.cmu.sphinx.frontend.filter.Preemphasizer"/>
+  <component name="preemphasizer2"
+    type="edu.cmu.sphinx.frontend.filter.Preemphasizer"/>
 
   <component name="windower"
-    type="edu.cmu.sphinx.frontend.window.RaisedCosineWindower">
-  </component>
+    type="edu.cmu.sphinx.frontend.window.RaisedCosineWindower"/>
+  <component name="windower2"
+    type="edu.cmu.sphinx.frontend.window.RaisedCosineWindower"/>
 
   <component name="fft"
-    type="edu.cmu.sphinx.frontend.transform.DiscreteFourierTransform">
-  </component>
+    type="edu.cmu.sphinx.frontend.transform.DiscreteFourierTransform"/>
+  <component name="fft2"
+    type="edu.cmu.sphinx.frontend.transform.DiscreteFourierTransform"/>
 
   <component name="autoCepstrum"
+    type="edu.cmu.sphinx.frontend.AutoCepstrum">
+    <property name="loader" value="acousticModelLoader"/>
+  </component>
+  <component name="autoCepstrum2"
     type="edu.cmu.sphinx.frontend.AutoCepstrum">
     <property name="loader" value="acousticModelLoader"/>
   </component>
 
   <component name="batchCMN"
     type="edu.cmu.sphinx.frontend.feature.BatchCMN"/>
+  <component name="batchCMN2"
+    type="edu.cmu.sphinx.frontend.feature.BatchCMN"/>
 
   <component name="liveCMN"
+    type="edu.cmu.sphinx.frontend.feature.LiveCMN"/>
+  <component name="liveCMN2"
     type="edu.cmu.sphinx.frontend.feature.LiveCMN"/>
 
   <component name="featureExtraction"
     type="edu.cmu.sphinx.frontend.feature.DeltasFeatureExtractor"/>
+  <component name="featureExtraction2"
+    type="edu.cmu.sphinx.frontend.feature.DeltasFeatureExtractor"/>
 
   <component name="featureTransform"
+    type="edu.cmu.sphinx.frontend.feature.FeatureTransform">
+    <property name="loader" value="acousticModelLoader"/>
+  </component>
+  <component name="featureTransform2"
     type="edu.cmu.sphinx.frontend.feature.FeatureTransform">
     <property name="loader" value="acousticModelLoader"/>
   </component>
