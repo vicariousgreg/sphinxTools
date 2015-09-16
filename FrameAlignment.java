@@ -61,6 +61,10 @@ public class FrameAlignment {
         this.isSpeech = false;
     }
 
+    public boolean isEmpty() {
+        return !isSpeech && word == null;
+    }
+
     public String toString() {
         return String.format("%5.2f %15s %12s %4s %12s %s",
                 time / 1000.0,

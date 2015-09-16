@@ -57,4 +57,10 @@ public class WordAlignment {
             this.time = null;
         }
     }
+
+    public String toString() {
+        String start = (time == null) ? "" : Long.toString(time.getStart());
+        String end = (time == null) ? "" : Long.toString(time.getEnd());
+        return String.format("%20s %10s %10s", word.toString(), start, end);
+    }
 }

@@ -26,6 +26,7 @@ import edu.cmu.sphinx.result.WordResult;
 import edu.cmu.sphinx.linguist.HMMSearchState;
 import edu.cmu.sphinx.linguist.acoustic.tiedstate.*;
 import edu.cmu.sphinx.util.LogMath;
+import edu.cmu.sphinx.util.TimeFrame;
 
 public class Test {
     private static final int senoneId = 4974;
@@ -68,6 +69,9 @@ public class Test {
         TranscriptAlignment t = SpeechTools.getTranscriptAlignment(audioUrl, transcriptPath);
         for (FrameAlignment f : t.frames.values()) {
             System.out.println(f);
+        }
+        for (TimeFrame time : t.getEmptyRegions(150)) {
+            System.out.println(time);
         }
 
         //SenoneDump dmp = SpeechTools.getSenoneDump(audioUrl);

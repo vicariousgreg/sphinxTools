@@ -18,6 +18,7 @@ import java.util.Scanner;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.LinkedHashMap;
+import java.util.Collections;
 
 import edu.cmu.sphinx.decoder.search.Token;
 import edu.cmu.sphinx.alignment.LongTextAligner;
@@ -40,7 +41,55 @@ public class TranscriptAlignment {
     public TranscriptAlignment(String transcript,
             List<WordResult> wordResults,
             List<SpeechClassifiedData> speechData) {
-        this.words = new ArrayList<WordAlignment>();
+        this.words = getWordAlignments(transcript, wordResults);
+        this.frames = getFrameAlignments(this.words, speechData);
+        this.lastFrame = Collections.max(frames.keySet());
+    }
+
+    /**
+     * Finds all regions of frames that do not have corresponding words and are
+     * tagged as non-speech.
+     *
+     * @param threshold threshold for length of contiguous region
+     * @return list of TimeFrames
+     */
+    public List<TimeFrame> getEmptyRegions(long threshold) {
+        List<FrameAlignment> emptyFrames = new ArrayList<FrameAlignment>();
+        List<TimeFrame> nonSpeech = new ArrayList<TimeFrame>();
+
+        for (FrameAlignment frame : frames.values()) {
+            if (frame.isEmpty()) emptyFrames.add(frame);
+        }
+
+        long start = emptyFrames.get(0).time;
+        long end = start;
+        for (FrameAlignment frame : emptyFrames) {
+            if (frame.time == end + 10) {
+                end = frame.time;
+            } else if (frame.time > end + 10) {
+                if (end != start && end - start >= threshold) {
+                    nonSpeech.add(new TimeFrame(start, end));
+                    //System.out.printf("%f,%f,%d\n", start / 1000.0, end / 1000.0, end-start);
+                }
+                start = end = frame.time;
+            }
+        }
+        return nonSpeech;
+    }
+
+    /**
+     * Creates a list of Word Alignments from a list of Word Result objects
+     * and the transcript they were aligned to.
+     * Creates WordAlignment objects without corresponding words for words
+     * that were not found during the alignment process.
+     *
+     * @param transcript transcript
+     * @param wordResults word results from alignment process
+     * @return list of word alignments
+     */
+    private List<WordAlignment> getWordAlignments(String transcript,
+            List<WordResult> wordResults) {
+        List<WordAlignment> wordAlignments = new ArrayList<WordAlignment>();
 
         // Align transcript
         List<String> stringResults = new ArrayList<String>();
@@ -63,18 +112,34 @@ public class TranscriptAlignment {
         for (int i = 0; i < aid.length; ++i) {
             if (aid[i] == -1) {
                 Word word = null;
-                this.words.add(new WordAlignment(dictionary.getWord(words.get(i)), null));
+                wordAlignments.add(new WordAlignment(dictionary.getWord(words.get(i)), null));
             } else {
                 WordResult wr = wordResults.get(aid[i]);
-                this.words.add(new WordAlignment(wr.getWord(), wr));
+                wordAlignments.add(new WordAlignment(wr.getWord(), wr));
                 lastId = aid[i];
             }
         }
 
+        return wordAlignments;
+    }
+
+    /**
+     * Creates a map of collect times to FrameAlignment objects from a list of
+     * WordAlignment objects.
+     * Blank alignments are create for frames that do not have corresponding
+     * words, and frames are tagged as speech/non-speech according to the given
+     * speech data.
+     * 
+     * @param words word alignments
+     * @param speechData speech classified data
+     * @return map of times to frame alignments
+     */
+    private Map<Long, FrameAlignment> getFrameAlignments(List<WordAlignment> words,
+            List<SpeechClassifiedData> speechData) {
         // Populate frame alignments from words.
         Map<Long, FrameAlignment> tempFrames = new LinkedHashMap<Long, FrameAlignment>();
 
-        for (WordAlignment word : this.words) {
+        for (WordAlignment word : words) {
             for (FrameAlignment frame : word.frames) {
                 tempFrames.put(frame.time, frame);
                 frame.isSpeech = true;
@@ -82,7 +147,7 @@ public class TranscriptAlignment {
         }
 
         // Fill in the gaps and set speech status.
-        this.frames = new LinkedHashMap<Long, FrameAlignment>();
+        Map<Long, FrameAlignment> frames = new LinkedHashMap<Long, FrameAlignment>();
         long time = 0;
 
         for (SpeechClassifiedData data : speechData) {
@@ -91,8 +156,8 @@ public class TranscriptAlignment {
             if (f == null)
                 f = new FrameAlignment(time);
             f.isSpeech = data.isSpeech();
-            this.frames.put(time, f);
+            frames.put(time, f);
         }
-        this.lastFrame = time;
+        return frames;
     }
 }
