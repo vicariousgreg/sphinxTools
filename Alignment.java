@@ -361,5 +361,4 @@ public class Alignment {
 
         return merged;
     }
-
 }

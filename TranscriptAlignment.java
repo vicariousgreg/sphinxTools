@@ -35,6 +35,7 @@ import edu.cmu.sphinx.util.TimeFrame;
 public class TranscriptAlignment {
     public final List<WordAlignment> words;
     public final Map<Long, FrameAlignment> frames;
+    public final long lastFrame;
 
     public TranscriptAlignment(String transcript,
             List<WordResult> wordResults,
@@ -82,14 +83,16 @@ public class TranscriptAlignment {
 
         // Fill in the gaps and set speech status.
         this.frames = new LinkedHashMap<Long, FrameAlignment>();
+        long time = 0;
 
         for (SpeechClassifiedData data : speechData) {
-            long time = data.getCollectTime();
+            time = data.getCollectTime();
             FrameAlignment f = tempFrames.get(time);
             if (f == null)
                 f = new FrameAlignment(time);
             f.isSpeech = data.isSpeech();
             this.frames.put(time, f);
         }
+        this.lastFrame = time;
     }
 }
