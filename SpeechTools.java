@@ -24,7 +24,8 @@ import edu.cmu.sphinx.frontend.*;
 import edu.cmu.sphinx.frontend.endpoint.*;
 import edu.cmu.sphinx.frontend.util.*;
 import edu.cmu.sphinx.result.WordResult;
-import edu.cmu.sphinx.linguist.HMMSearchState;
+import edu.cmu.sphinx.linguist.*;
+import edu.cmu.sphinx.linguist.dictionary.Dictionary;
 import edu.cmu.sphinx.linguist.acoustic.tiedstate.*;
 import edu.cmu.sphinx.util.LogMath;
 import edu.cmu.sphinx.util.props.ConfigurationManager;
@@ -64,6 +65,30 @@ public class SpeechTools {
         return context;
     }
 
+    public static Dictionary getDictionary() {
+        try {
+            Dictionary dictionary = ((Dictionary) getContext().getConfigurationManager().lookup("dictionary"));
+            dictionary.allocate();
+            return dictionary;
+        } catch (Exception e) {
+            System.err.println(e);
+            System.exit(0);
+            return null;
+        }
+    }
+
+    public static SpeechAligner getSpeechAligner() {
+        try {
+            SpeechAligner aligner =
+                    new SpeechAligner(ACOUSTIC_MODEL_PATH, DICTIONARY_PATH, G2P_PATH);
+            aligner.setTokenizer(new USEnglishTokenizer());
+            return aligner;
+        } catch (Exception e) {
+            System.err.println(e);
+            System.exit(0);
+            return null;
+        }
+    }
 
 
     /////////////////////////////////
@@ -162,6 +187,21 @@ public class SpeechTools {
         return dmp;
     }
 
+    public static TranscriptAlignment getTranscriptAlignment(URL audioUrl, String transcriptPath)  throws Exception {
+        // Load transcript
+        Scanner scanner = new Scanner(new File(transcriptPath));  
+        scanner.useDelimiter("\\Z");  
+        String transcript = scanner.next();
+        scanner.close();
+
+        Context context = getContext();
+        context.setLocalProperty("trivialScorer->frontend", "unmarkedFrontEnd");
+
+        return new TranscriptAlignment(transcript,
+                getWordAlignment(audioUrl, transcript), 
+                getSpeechClassifiedData(audioUrl));
+    }
+
     //////////////////////
     /* Alignment tools. */
     //////////////////////
@@ -183,7 +223,7 @@ public class SpeechTools {
         context.setLocalProperty("trivialScorer->frontend", "unmarkedFrontEnd");
 
         return new Alignment(getWordAlignment(audioUrl, transcript),
-                getSignals(audioUrl), getFeatures(audioUrl, false),
+                getFeatures(audioUrl, false),
                 getSpeechClassifiedData(audioUrl));
     }
 
@@ -194,9 +234,7 @@ public class SpeechTools {
      * @return word alignment list
      */
     public static List<WordResult> getWordAlignment(URL audioUrl, String transcript) throws Exception {
-        SpeechAligner aligner =
-                new SpeechAligner(ACOUSTIC_MODEL_PATH, DICTIONARY_PATH, G2P_PATH);
-        aligner.setTokenizer(new USEnglishTokenizer());
+        SpeechAligner aligner = getSpeechAligner();
 
         return aligner.align(audioUrl, transcript);
     }
@@ -215,9 +253,7 @@ public class SpeechTools {
             stringResults.add(wr.getWord().getSpelling());
         }
 
-        SpeechAligner aligner =
-                new SpeechAligner(ACOUSTIC_MODEL_PATH, DICTIONARY_PATH, G2P_PATH);
-        aligner.setTokenizer(new USEnglishTokenizer());
+        SpeechAligner aligner = getSpeechAligner();
 
         LongTextAligner textAligner =
                 new LongTextAligner(stringResults, 2);

@@ -29,44 +29,47 @@ import edu.cmu.sphinx.result.WordResult;
 import edu.cmu.sphinx.linguist.HMMSearchState;
 import edu.cmu.sphinx.linguist.acoustic.tiedstate.*;
 import edu.cmu.sphinx.util.LogMath;
+import edu.cmu.sphinx.util.TimeFrame;
 
 public class Alignment {
     public final List<WordResult> wordResults;
-    public final List<Signal> signals;
     public final List<FloatData> features;
     public final List<SpeechClassifiedData> speech;
     public final Map<Long, Frame> frames;
+    public final long lastFrame;
 
     public Alignment(List<WordResult> wr,
-            List<Signal> sig,
             List<FloatData> feat,
             List<SpeechClassifiedData> speech) {
         this.wordResults = wr;
-        this.signals = sig;
         this.features = feat;
         this.speech = speech;
 
         this.frames = new LinkedHashMap<Long, Frame>();
+        long last = 0;
         for (SpeechClassifiedData data : speech) {
             Frame frame = new Frame(data.getCollectTime());
             frame.isSpeech = data.isSpeech();
             frames.put(data.getCollectTime(), frame);
+            last = data.getCollectTime();
         }
+        this.lastFrame = last;
 
         for (WordResult result : wordResults) {
             String word = result.getWord().toString();
 
             for (Token token : result.getTokens()) {
                 long time = token.getCollectTime();
-                if (frames.get(time) != null) {
-                    frames.get(time).word = word;
-                    frames.get(time).senone = 
+                Frame frame = frames.get(time);
+                if (frame != null) {
+                    frame.word = word;
+                    frame.senone = 
                         ((HMMSearchState) token.getSearchState())
                         .getHMMState().getHMM().getUnit().toString();
-                    frames.get(time).state = 
+                    frame.state = 
                         ((HMMSearchState) token.getSearchState())
                         .getHMMState().getState();
-                    frames.get(time).score = token.getAcousticScore();
+                    frame.score = token.getAcousticScore();
                 }
             }
         }
@@ -74,7 +77,6 @@ public class Alignment {
 
     public void print() {
         System.out.println(wordResults.size());
-        System.out.println(signals.size());
         System.out.println(features.size());
 
         for (WordResult wr : wordResults) {
@@ -90,89 +92,14 @@ public class Alignment {
             }
 
         }
-        for (Signal sig : signals) {
-            System.out.printf("%s %d\n",
-                    sig.toString(),
-                    sig.getTime());
-        }
-    }
-
-    public void dumpAlignment() {
-        Iterator<WordResult> words  = wordResults.iterator();
-        Iterator<Signal> sigs  = signals.iterator();
-        WordResult wr = (words.hasNext()) ? words.next() : null;
-        Signal sig = (sigs.hasNext()) ? sigs.next() : null;
-
-        String currWord = "";
-        String currUnit = "";
-        String currState = "";
-        String currSig = "";
-        String currScore = "";
-
-        for (FloatData fd : features) {
-            long time = fd.getCollectTime();
-            if (wr != null && time >= wr.getTimeFrame().getEnd()) {
-                currWord = "";
-                wr = (words.hasNext()) ? words.next() : null;
-            } else if (wr != null && time >= wr.getTimeFrame().getStart()) {
-                currWord = wr.getWord().toString();
-            }
-
-            currScore = "";
-            currUnit = "";
-            currState = "";
-            if (currWord != "") {
-                for (Token token : wr.getTokens()) {
-                    if (token.getCollectTime() == time) {
-                        currScore = Float.toString(token.getAcousticScore());
-
-                        currUnit = ((HMMSearchState) token.getSearchState())
-                            .getHMMState().getHMM().getUnit().toString();
-                        currState = Integer.toString(
-                                ((HMMSearchState) token.getSearchState())
-                                .getHMMState().getState());
-                        break;
-                    }
-                }
-            }
-
-            if (sig != null && time >= sig.getTime()) {
-                currSig = sig.toString();
-                sig = (sigs.hasNext()) ? sigs.next(): null;
-            } else {
-                currSig = "";
-            }
-
-            /*
-            System.out.printf("%8d %20s %12s %s %12s %20s\n",
-                    time,
-                    currWord,
-                    currUnit,
-                    currState,
-                    currScore,
-                    currSig);
-            */
-            System.out.printf("%f,%s %s %s\n",
-                    time / 1000.0,
-                    currWord,
-                    currUnit,
-                    currState);
-        }
     }
 
     public void dumpWords() {
-        for (WordResult wr : wordResults)
+        for (WordResult wr : wordResults) {
             System.out.printf("%f,%f,%s\n",
                     wr.getTimeFrame().getStart() / 1000.0,
                     wr.getTimeFrame().getEnd() / 1000.0,
                     wr.getWord());
-    }
-
-    public void dumpSignals() {
-        for (Signal sig : signals) {
-            System.out.printf("%f,%s\n",
-                    sig.getTime() / 1000.0,
-                    sig.toString());
         }
     }
 
@@ -204,6 +131,158 @@ public class Alignment {
         }
     }
 
+    public void validate() {
+        for (WordResult wr : wordResults) {
+            if (wr.getTokens().size() > 0) {
+                long start = wr.getTokens().get(0).getCollectTime();
+                long end = wr.getTokens().get(wr.getTokens().size() - 1).getCollectTime();
+                if (start != wr.getTimeFrame().getStart() ||
+                        end != wr.getTimeFrame().getEnd()) {
+                    System.out.printf("%f,%f,%s\n",
+                            wr.getTimeFrame().getStart() / 1000.0,
+                            wr.getTimeFrame().getEnd() / 1000.0,
+                            wr.getWord());
+                    System.out.printf("    %f,%f\n", start / 1000.0, end / 1000.0);
+                    for (Token t : wr.getTokens())
+                        System.out.println(frames.get(t.getCollectTime()));
+                }
+            } else {
+                System.out.printf("Word result for %s has no tokens!\n", wr.getWord());
+            }
+        }
+    }
+
+    public List<TimeFrame> getEmptyRegions() {
+        long threshold = 150;
+        List<Frame> emptyFrames = new ArrayList<Frame>();
+        List<TimeFrame> nonSpeech = new ArrayList<TimeFrame>();
+
+        for (Frame frame : frames.values()) {
+            if (frame.isEmpty()) emptyFrames.add(frame);
+        }
+
+        long start = emptyFrames.get(0).time;
+        long end = start;
+        for (Frame frame : emptyFrames) {
+            if (frame.time == end + 10) {
+                end = frame.time;
+            } else if (frame.time > end + 10) {
+                if (end != start && end - start >= threshold) {
+                    nonSpeech.add(new TimeFrame(start, end));
+                    //System.out.printf("%f,%f,%d\n", start / 1000.0, end / 1000.0, end-start);
+                }
+                start = end = frame.time;
+            }
+        }
+        return nonSpeech;
+    }
+
+    public List<Region> getSegments() {
+        List<Region> segments = new ArrayList<Region>();
+        List<TimeFrame> nonSpeech = getEmptyRegions();
+        TimeFrame left = null;
+        TimeFrame right = null;
+
+        for (TimeFrame tf : nonSpeech) {
+            left = right;
+            right = tf;
+            long start = (left == null) ? 0 : left.getEnd() + 10;
+            long end = right.getStart() - 10;
+            TimeFrame time = new TimeFrame(start, end);
+            segments.add(new Region(left, time, right));
+        }
+
+        if (right.getEnd() != lastFrame) {
+            segments.add(new Region(right, new TimeFrame(right.getEnd() + 10, lastFrame), null));
+        }
+
+        int index = 0;
+        Region curr = segments.get(index);
+        for (WordResult wr : wordResults) {
+            if (wr.getTimeFrame().getStart() < curr.time.getEnd()) {
+                curr.words.add(wr);
+            } else {
+                curr = segments.get(++index);
+                curr.words.add(wr);
+            }
+        }
+
+        return segments;
+    }
+
+    public List<Region> getMergedSegments() {
+        long threshold = 5000;
+        List<Region> regions = getSegments();
+        List<Region> mergedRegions = new ArrayList<Region>();
+
+        if (regions.size() < 2) return regions;
+
+        for (int i = 0; i < regions.size(); ++i) {
+            Region curr = regions.get(i);
+            //System.out.println("  " + curr);
+
+            if (curr.words.size() == 0 ||
+                    curr.getEnd() - curr.getStart() < threshold) {
+                Region left = (mergedRegions.size() > 0) ? mergedRegions.get(mergedRegions.size()-1) : null;
+                Region right = (i < regions.size() - 1) ? regions.get(i+1) : null;
+
+                boolean useRight = (left == null);
+                if (left != null && right != null)
+                    useRight = (left.getLength() > right.getLength());
+
+                if (useRight == true) {
+                    //System.out.println("MERGE RIGHT");
+                    //System.out.println(curr);
+                    //System.out.println(right);
+
+                    // use right
+                    Region merged = mergeRegions(curr, right);
+
+                    // Skip
+                    ++i;
+                    mergedRegions.add(merged);
+                } else {
+                    //System.out.println("MERGE LEFT");
+                    //System.out.println(left);
+                    //System.out.println(curr);
+
+                    // use left
+                    Region merged = mergeRegions(left, curr);
+
+                    // Replace
+                    mergedRegions.remove(mergedRegions.size()-1);
+                    mergedRegions.add(merged);
+                }
+            } else {
+                mergedRegions.add(curr);
+            }
+        }
+        return mergedRegions;
+    }
+
+    public void printSegments() {
+        for (Region r : getSegments()) {
+            System.out.printf("%f,%f,", r.time.getStart() / 1000.0, r.time.getEnd() / 1000.0);
+            StringBuilder sb = new StringBuilder("");
+            for (WordResult wr : r.words) {
+                sb.append(wr.getWord() + " ");
+            }
+            System.out.println(sb.toString());
+        }
+    }
+
+    public void printMergedSegments() {
+        for (Region r : getMergedSegments()) {
+            System.out.printf("%f,%f,", r.time.getStart() / 1000.0, r.time.getEnd() / 1000.0);
+            StringBuilder sb = new StringBuilder("");
+            for (WordResult wr : r.words) {
+                sb.append(wr.getWord() + " ");
+            }
+            System.out.println(sb.toString());
+        }
+    }
+
+
     private class Frame {
         public long time;
         public String word = "";
@@ -216,15 +295,71 @@ public class Alignment {
             this.time = time;
         }
 
+        public boolean isEmpty() {
+            return this.isSpeech == false && this.word == "";
+        }
+
         public String toString() {
             return String.format(
-                    "%5.2f %15s %12s %4d %12s %s",
+                    "%5.2f %15s %12s %4s %12s %s",
                     time / 1000.0,
                     word,
                     senone,
-                    (state == null) ? "" : state,
+                    (state == null) ? "" : state.toString(),
                     (score == null) ? "" : score.toString(),
                     isSpeech);
         }
     }
+
+    private static class Region {
+        public TimeFrame left;
+        public TimeFrame right;
+        public TimeFrame time;
+        public List<WordResult> words;
+
+        public Region(TimeFrame left, TimeFrame time, TimeFrame right) {
+            this.left = left;
+            this.time = time;
+            this.right = right;
+            this.words = new ArrayList<WordResult>();
+        }
+
+        public long getStart() {
+            return time.getStart();
+        }
+
+        public long getEnd() {
+            return time.getEnd();
+        }
+
+        public long getContextStart() {
+            return (left == null) ? time.getStart() : left.getStart();
+        }
+
+        public long getContextEnd() {
+            return (right == null) ? time.getEnd() : right.getEnd();
+        }
+
+        public long getLength() {
+            return getEnd() - getStart();
+        }
+
+        public String toString() {
+            return String.format("%d %d", getStart(), getEnd());
+        }
+
+    }
+
+    public static Region mergeRegions(Region leftRegion, Region rightRegion) {
+        Region merged = new Region(leftRegion.left,
+                new TimeFrame(leftRegion.time.getStart(), rightRegion.time.getEnd()),
+                rightRegion.right);
+
+        // Add words
+        for (WordResult wr : leftRegion.words) merged.words.add(wr);
+        for (WordResult wr : rightRegion.words) merged.words.add(wr);
+
+        return merged;
+    }
+
 }

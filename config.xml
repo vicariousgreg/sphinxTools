@@ -58,8 +58,7 @@
   <!-- DECODER -->
   <!--         -->
   <component name="decoder" type="edu.cmu.sphinx.decoder.Decoder">
-    <!--<property name="searchManager" value="wordPruningLookaheadSearchManager"/> -->
-    <property name="searchManager" value="simpleSearchManager"/>
+    <property name="searchManager" value="wordPruningSearchManager"/>
   </component>
 
 
@@ -218,7 +217,7 @@
     <property name="silenceInsertionProbability"
       value="${silenceInsertionProbability}"/>
     <property name="languageWeight" value="${languageWeight}"/>
-    
+
     <property name="addOutOfGrammarBranch" value="true"/>
     <property name="outOfGrammarProbability" value="${oogProbability}"/>
     <property name="phoneInsertionProbability" value="${oogLoopProbability}"/>
@@ -307,7 +306,7 @@
   <component name="dictionary"
     type="edu.cmu.sphinx.linguist.dictionary.TextDictionary">
     <property name="dictionaryPath" value="${dictionaryLocation}"/>
-    <property name="fillerPath" value=""/>
+    <property name="fillerPath" value="${dictionaryLocation}/noisedict"/>
     <property name="unitManager" value="unitManager"/>    
   </component>
 
@@ -386,7 +385,7 @@
 
   <component name="speechClassifier"
     type="edu.cmu.sphinx.frontend.endpoint.SpeechClassifier">
-    <property name="threshold" value="13" />
+    <property name="threshold" value="10" />
   </component>
 
   <component name="speechMarker"
