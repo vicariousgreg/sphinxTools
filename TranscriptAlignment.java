@@ -26,6 +26,7 @@ public class TranscriptAlignment {
     public final Map<Long, FrameAlignment> frames;
     public final List<TimeFrame> confusionTimeFrames;
     public final long lastFrame;
+    public boolean badTranscript = false;
 
     public TranscriptAlignment(String transcript,
             List<WordResult> wordResults,
@@ -35,6 +36,9 @@ public class TranscriptAlignment {
         this.frames = getFrameAlignments(this.words, speechData, features);
         this.confusionTimeFrames = getConfusionTimeFrames(this.words);
         this.lastFrame = Collections.max(frames.keySet());
+
+        // Flag this transcript if no words could be aligned.
+        this.badTranscript = (wordResults.size() == 0);
     }
 
     /**
@@ -49,6 +53,11 @@ public class TranscriptAlignment {
     public List<Segment> getSegments() {
         List<Segment> segments = new ArrayList<Segment>();
         List<TimeFrame> empty = getEmptyRegions(150);
+
+        // If this is a bad transcript, make no attempts at segmentation.
+        if (this.badTranscript == true) {
+            return segments;
+        }
 
         // If there are no empty regions, return a single segment.
         if (empty.size() == 0) {
@@ -189,20 +198,26 @@ public class TranscriptAlignment {
     private List<WordAlignment> getWordAlignments(String transcript,
             List<WordResult> wordResults) {
         List<WordAlignment> wordAlignments = new ArrayList<WordAlignment>();
+        SpeechAligner aligner = SpeechTools.getSpeechAligner();
 
         // Align transcript
         List<String> stringResults = new ArrayList<String>();
-        for (WordResult wr : wordResults) {
-            stringResults.add(wr.getWord().getSpelling());
-        }
-
-        SpeechAligner aligner = SpeechTools.getSpeechAligner();
-
-        LongTextAligner textAligner =
-                new LongTextAligner(stringResults, 2);
         List<String> sentences = aligner.getTokenizer().expand(transcript);
         List<String> words = aligner.sentenceToWords(sentences);
+
+        if (wordResults.size() == 0) {
+            for (String w : words) {
+                wordAlignments.add(new WordAlignment(w, null));
+            }
+            return wordAlignments;
+        }
+
+        for (WordResult wr : wordResults) {
+            stringResults.add(wr.getWord().getSpelling());
+       }
         
+        LongTextAligner textAligner =
+                new LongTextAligner(stringResults, 2);
         int[] aid = textAligner.align(words);
 
         int lastId = -1;
