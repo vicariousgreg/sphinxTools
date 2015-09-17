@@ -37,7 +37,6 @@ public class SpeechTools {
             "/audio/models/transcription/dictionary/cmudict-en-us.dict";
             //"/audio/models/transcription/en_us_nostress/cmudict-5prealpha.dict";
     private static final String G2P_PATH =
-            //null;
             "/audio/models/transcription/en_us_nostress/model.fst.ser";
     private static Context context;
 
@@ -50,44 +49,45 @@ public class SpeechTools {
      * @return context
      */
     public static Context getContext() {
-        if (context == null) {
-            Configuration config = new Configuration();
-            config.setAcousticModelPath(ACOUSTIC_MODEL_PATH);
-            config.setDictionaryPath(DICTIONARY_PATH);
-            try {
-                context = new Context(config);
-            } catch (Exception e) {
-                System.err.println(e);
-                System.exit(-1);
-                return null;
-            }
-        }
+        if (context == null)
+            initializeContext();
         return context;
     }
 
-    public static Dictionary getDictionary() {
+    public static void initializeContext() {
+        Configuration config = new Configuration();
+        config.setAcousticModelPath(ACOUSTIC_MODEL_PATH);
+        config.setDictionaryPath(DICTIONARY_PATH);
         try {
-            Dictionary dictionary = ((Dictionary) getContext().getConfigurationManager().lookup("dictionary"));
-            dictionary.allocate();
-            return dictionary;
+            context = new Context(config);
         } catch (Exception e) {
             System.err.println(e);
-            System.exit(0);
-            return null;
+            System.exit(-1);
         }
     }
 
-    public static SpeechAligner getSpeechAligner() {
+    public static Dictionary getDictionary() {
+        Dictionary dictionary = null;
         try {
-            SpeechAligner aligner =
-                    new SpeechAligner(ACOUSTIC_MODEL_PATH, DICTIONARY_PATH, G2P_PATH);
-            aligner.setTokenizer(new USEnglishTokenizer());
-            return aligner;
+            dictionary = ((Dictionary) getContext().getConfigurationManager().lookup("dictionary"));
+            dictionary.allocate();
         } catch (Exception e) {
             System.err.println(e);
-            System.exit(0);
-            return null;
+            System.exit(-1);
         }
+        return dictionary;
+    }
+
+    public static SpeechAligner getSpeechAligner() {
+        SpeechAligner aligner = null;
+        try {
+            aligner = new SpeechAligner(ACOUSTIC_MODEL_PATH, DICTIONARY_PATH, G2P_PATH);
+            aligner.setTokenizer(new USEnglishTokenizer());
+        } catch (Exception e) {
+            System.err.println(e);
+            System.exit(-1);
+        }
+        return aligner;
     }
 
 
@@ -187,7 +187,7 @@ public class SpeechTools {
         return dmp;
     }
 
-    public static TranscriptAlignment getTranscriptAlignment(URL audioUrl, String transcriptPath)  throws Exception {
+    public static TranscriptAlignment getTranscriptAlignment(URL audioUrl, String transcriptPath) throws Exception {
         // Load transcript
         Scanner scanner = new Scanner(new File(transcriptPath));  
         scanner.useDelimiter("\\Z");  
@@ -235,69 +235,6 @@ public class SpeechTools {
      * @return word alignment list
      */
     public static List<WordResult> getWordAlignment(URL audioUrl, String transcript) throws Exception {
-        SpeechAligner aligner = getSpeechAligner();
-
-        return aligner.align(audioUrl, transcript);
-    }
-
-    /**
-     * Creates a text alignment given a word alignment and transcript.
-     * @param wordResults word alignment
-     * @param transcript transcript
-     * @return text alignment
-     */
-    public static List<String> getTextAlignment(List<WordResult> wordResults, String transcript) throws Exception {
-        List<String> output = new ArrayList<String>();
-
-        List<String> stringResults = new ArrayList<String>();
-        for (WordResult wr : wordResults) {
-            stringResults.add(wr.getWord().getSpelling());
-        }
-
-        SpeechAligner aligner = getSpeechAligner();
-
-        LongTextAligner textAligner =
-                new LongTextAligner(stringResults, 2);
-        List<String> sentences = aligner.getTokenizer().expand(transcript);
-        List<String> words = aligner.sentenceToWords(sentences);
-        
-        int[] aid = textAligner.align(words);
-        
-        int lastId = -1;
-        for (int i = 0; i < aid.length; ++i) {
-            if (aid[i] == -1) {
-                //System.out.format("- %s\n", words.get(i));
-                output.add(String.format("- %s\n", words.get(i)));
-            } else {
-                if (aid[i] - lastId > 1) {
-                    for (WordResult result : wordResults.subList(lastId + 1,
-                            aid[i])) {
-                        //System.out.format("+ %-25s [%s]\n", result.getWord()
-                         //       .getSpelling(), result.getTimeFrame());
-                        output.add(String.format("+ %-25s [%s]\n", result.getWord()
-                                .getSpelling(), result.getTimeFrame()));
-                    }
-                }
-                //System.out.format("  %-25s [%s]\n", wordResults.get(aid[i])
-                 //       .getWord().getSpelling(), wordResults.get(aid[i])
-                  //      .getTimeFrame());
-                output.add(String.format("  %-25s [%s]\n", wordResults.get(aid[i])
-                        .getWord().getSpelling(), wordResults.get(aid[i])
-                        .getTimeFrame()));
-                lastId = aid[i];
-            }
-        }
-
-        if (lastId >= 0 && wordResults.size() - lastId > 1) {
-            for (WordResult result : wordResults.subList(lastId + 1,
-                    wordResults.size())) {
-                //System.out.format("+ %-25s [%s]\n", result.getWord()
-                 //       .getSpelling(), result.getTimeFrame());
-                output.add(String.format("+ %-25s [%s]\n", result.getWord()
-                        .getSpelling(), result.getTimeFrame()));
-            }
-        }
-
-        return output;
+        return getSpeechAligner().align(audioUrl, transcript);
     }
 }

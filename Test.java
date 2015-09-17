@@ -70,9 +70,10 @@ public class Test {
         for (FrameAlignment f : t.frames.values()) {
             System.out.println(f);
         }
-        for (TimeFrame time : t.getEmptyRegions(150)) {
-            System.out.println(time);
+        for (WordAlignment word : t.words) {
+            System.out.println(word);
         }
+        for (Segment s : t.getSegments()) System.out.println(s);
 
         //SenoneDump dmp = SpeechTools.getSenoneDump(audioUrl);
         //dmp.print();

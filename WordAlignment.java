@@ -50,7 +50,8 @@ public class WordAlignment {
                 this.time = new TimeFrame(start, end);
 
                 for (Token token : wr.getTokens()) {
-                    this.frames.add(new FrameAlignment(token, wr.getWord().toString()));
+                    //this.frames.add(new FrameAlignment(token, wr.getWord().toString()));
+                    this.frames.add(new FrameAlignment(token, this));
                 }
             }
         } else {
@@ -61,6 +62,6 @@ public class WordAlignment {
     public String toString() {
         String start = (time == null) ? "" : Long.toString(time.getStart());
         String end = (time == null) ? "" : Long.toString(time.getEnd());
-        return String.format("%20s %10s %10s", word.toString(), start, end);
+        return String.format("%10s %10s %20s", start, end, word.toString());
     }
 }

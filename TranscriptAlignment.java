@@ -36,6 +36,7 @@ import edu.cmu.sphinx.util.TimeFrame;
 public class TranscriptAlignment {
     public final List<WordAlignment> words;
     public final Map<Long, FrameAlignment> frames;
+    public final List<TimeFrame> confusionTimeFrames;
     public final long lastFrame;
 
     public TranscriptAlignment(String transcript,
@@ -44,8 +45,101 @@ public class TranscriptAlignment {
             List<FloatData> features) {
         this.words = getWordAlignments(transcript, wordResults);
         this.frames = getFrameAlignments(this.words, speechData, features);
+        this.confusionTimeFrames = getConfusionTimeFrames(this.words);
         this.lastFrame = Collections.max(frames.keySet());
     }
+
+    /**
+     * Gets a list of segments representing a segmentation of this alignment.
+     * Segments are guaranteed to be split between identified words so that
+     * unidentified words do not end up on segment boundaries.
+     * Segments may not be contiguous, but any missing regions are sure to
+     * be void of any useful information.
+     *
+     * @return list of segments
+     */
+    public List<Segment> getSegments() {
+        List<Segment> segments = new ArrayList<Segment>();
+        List<TimeFrame> empty = getEmptyRegions(150);
+
+        if (empty.size() == 0) {
+            Segment s = new Segment(null, new TimeFrame(0, this.lastFrame), null);
+            s.words = this.words;
+            segments.add(s);
+            return segments;
+        }
+
+        for (int i = 1; i < empty.size(); ++i) {
+            TimeFrame left = empty.get(i-1);
+            TimeFrame right = empty.get(i);
+            long start = left.getEnd() + 10;
+            long end = right.getStart() - 10;
+
+            TimeFrame time = new TimeFrame(start, end);
+            segments.add(new Segment(left, time, right));
+        }
+
+        TimeFrame last = empty.get(empty.size() - 1);
+        segments.add(new Segment(
+                    last,
+                    new TimeFrame(last.getEnd(), this.lastFrame),
+                    null));
+
+        int index = 0;
+        Segment curr = segments.get(index);
+
+        for (WordAlignment word : this.words) {
+            if (word.time == null || word.time.getStart() <= curr.getEnd()) {
+                curr.words.add(word);
+            } else if (index == segments.size() - 1) {
+                // Shouldn't happen, but...
+                System.err.println("WARNING: word not added to segment");
+                break;
+            } else {
+                curr = segments.get(++index);
+                curr.words.add(word);
+            }
+        }
+
+        return Segment.merge(segments, 5000);
+    }
+
+    /**
+     * Validates a time frame by checking to see if it lies between two
+     * identified words or not.
+     * Non-speech regions are only valid if they split over words that have
+     * identified time frames.  Otherwise, segments may start or end with
+     * unidentified words, and we can't be certain the divide didn't split
+     * a word in half.
+     *
+     * @param timeFrame non speech time frame
+     * @return whether the time frame is valid.
+     */
+    private boolean validateTimeFrame(TimeFrame timeFrame) {
+        if (timeFrame.getStart() == 0 || timeFrame.getEnd() == this.lastFrame)
+            return false;
+
+        // Check for overlapping confusion areas.
+        for (TimeFrame confusion : this.confusionTimeFrames) {
+            if (confusion.getStart() > timeFrame.getEnd() ||
+                    confusion.getEnd() < timeFrame.getStart())
+                continue;
+            else return false;
+        }
+
+        // Check word regions.
+        for (WordAlignment word : this.words) {
+            TimeFrame time = word.time;
+            if (time != null) {
+                if (time.getStart() > timeFrame.getEnd() ||
+                        time.getEnd() < timeFrame.getStart())
+                    continue;
+                else return false;
+            }
+        }
+ 
+        return true;
+    } 
 
     /**
      * Finds all regions of frames that do not have corresponding words and are
@@ -69,12 +163,15 @@ public class TranscriptAlignment {
                 end = frame.time;
             } else if (frame.time > end + 10) {
                 if (end != start && end - start >= threshold) {
-                    nonSpeech.add(new TimeFrame(start, end));
+                    TimeFrame timeFrame = new TimeFrame(start, end);
+                    if (validateTimeFrame(timeFrame))
+                        nonSpeech.add(timeFrame);
                     //System.out.printf("%f,%f,%d\n", start / 1000.0, end / 1000.0, end-start);
                 }
                 start = end = frame.time;
             }
         }
+
         return nonSpeech;
     }
 
@@ -176,5 +273,32 @@ public class TranscriptAlignment {
         }
 
         return frames;
+    }
+
+    public List<TimeFrame> getConfusionTimeFrames(List<WordAlignment> wordAlignments) {
+        List<TimeFrame> confusion = new ArrayList<TimeFrame>();
+        if (wordAlignments.size() == 0) return confusion;
+
+        long lastEnd = 0;
+        List<WordAlignment> confusionWords = new ArrayList<WordAlignment>();
+        WordAlignment word = wordAlignments.get(0);
+        boolean inConfusion = (word.time == null);
+
+        for (int i = 1; i < wordAlignments.size(); ++i) {
+            word = wordAlignments.get(i);
+            if (word.time == null) {
+                inConfusion = true;
+            } else {
+                if (inConfusion) {
+                    confusion.add(new TimeFrame(lastEnd, word.time.getStart()));
+                }
+                lastEnd = word.time.getEnd();
+                inConfusion = false;
+            }
+        }
+        if (inConfusion) {
+            confusion.add(new TimeFrame(lastEnd, this.lastFrame));
+        }
+        return confusion;
     }
 }

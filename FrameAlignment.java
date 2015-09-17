@@ -27,38 +27,44 @@ import edu.cmu.sphinx.frontend.*;
 import edu.cmu.sphinx.frontend.endpoint.*;
 import edu.cmu.sphinx.result.WordResult;
 import edu.cmu.sphinx.linguist.HMMSearchState;
+import edu.cmu.sphinx.linguist.acoustic.HMMState;
 import edu.cmu.sphinx.linguist.acoustic.tiedstate.*;
 import edu.cmu.sphinx.util.LogMath;
 import edu.cmu.sphinx.util.TimeFrame;
 
 public class FrameAlignment {
     public final long time;
+    public final WordAlignment wordAlignment;
     public final String word;
     public final Float logAcousticScore;
     public final String triphone;
     public final Integer stateId;
+    public final Integer mId;
     public boolean isSpeech;
     public FloatData features;
 
-    public FrameAlignment(Token token, String word) {
+    public FrameAlignment(Token token, WordAlignment wa) {
         this.time = token.getCollectTime();
-        this.word = word;
+        this.wordAlignment = wa;
+        this.word = wa.word.toString();
         this.logAcousticScore = token.getAcousticScore();
-        this.triphone = 
-            ((HMMSearchState) token.getSearchState())
-            .getHMMState().getHMM().getUnit().toString();
-        this.stateId = 
-            ((HMMSearchState) token.getSearchState())
-            .getHMMState().getState();
+
+        HMMState hmmState =
+            ((HMMSearchState) token.getSearchState()).getHMMState();
+        this.triphone = hmmState.getHMM().getUnit().toString();
+        this.stateId = hmmState.getState();
+        this.mId = (int) hmmState.getMixtureId();
         this.isSpeech = true;
     }
 
     public FrameAlignment(long time) {
         this.time = time;
+        this.wordAlignment = null;
         this.word = null;
         this.logAcousticScore = null;
         this.triphone = null;
         this.stateId = null;
+        this.mId = null;
         this.isSpeech = false;
     }
 
