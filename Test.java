@@ -20,7 +20,7 @@ public class Test {
     private static final int senoneId = 4974;
 
     public static void main(String args[]) throws Exception {
-        Context.setCustomConfig("config.xml");
+        Context.setCustomConfig("/audio/tools/transcription/jar/config.xml");
 
         URL audioUrl = null;
         URL transcriptUrl = null;

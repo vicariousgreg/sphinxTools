@@ -19,7 +19,7 @@ import edu.cmu.sphinx.util.BatchFile;
 
 public class Segmenter {
     public static void main(String args[]) throws Exception {
-        Context.setCustomConfig("config.xml");
+        Context.setCustomConfig("/audio/tools/transcription/jar/config.xml");
 
         String batchPath = null;
         if (args.length > 0) {
