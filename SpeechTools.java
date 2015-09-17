@@ -199,7 +199,8 @@ public class SpeechTools {
 
         return new TranscriptAlignment(transcript,
                 getWordAlignment(audioUrl, transcript), 
-                getSpeechClassifiedData(audioUrl));
+                getSpeechClassifiedData(audioUrl),
+                getFeatures(audioUrl, false));
     }
 
     //////////////////////

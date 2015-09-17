@@ -38,6 +38,7 @@ public class FrameAlignment {
     public final String triphone;
     public final Integer stateId;
     public boolean isSpeech;
+    public FloatData features;
 
     public FrameAlignment(Token token, String word) {
         this.time = token.getCollectTime();

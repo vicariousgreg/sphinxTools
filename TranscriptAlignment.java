@@ -40,9 +40,10 @@ public class TranscriptAlignment {
 
     public TranscriptAlignment(String transcript,
             List<WordResult> wordResults,
-            List<SpeechClassifiedData> speechData) {
+            List<SpeechClassifiedData> speechData,
+            List<FloatData> features) {
         this.words = getWordAlignments(transcript, wordResults);
-        this.frames = getFrameAlignments(this.words, speechData);
+        this.frames = getFrameAlignments(this.words, speechData, features);
         this.lastFrame = Collections.max(frames.keySet());
     }
 
@@ -128,14 +129,17 @@ public class TranscriptAlignment {
      * WordAlignment objects.
      * Blank alignments are create for frames that do not have corresponding
      * words, and frames are tagged as speech/non-speech according to the given
-     * speech data.
+     * speech data. Finally, each alignment is given its corresponding feature
+     * data.
      * 
      * @param words word alignments
      * @param speechData speech classified data
+     * @param features extracted features by frame
      * @return map of times to frame alignments
      */
     private Map<Long, FrameAlignment> getFrameAlignments(List<WordAlignment> words,
-            List<SpeechClassifiedData> speechData) {
+            List<SpeechClassifiedData> speechData,
+            List<FloatData> features) {
         // Populate frame alignments from words.
         Map<Long, FrameAlignment> tempFrames = new LinkedHashMap<Long, FrameAlignment>();
 
@@ -158,6 +162,19 @@ public class TranscriptAlignment {
             f.isSpeech = data.isSpeech();
             frames.put(time, f);
         }
+
+        tempFrames = frames;
+        frames = new LinkedHashMap<Long, FrameAlignment>();
+
+        for (FloatData data : features) {
+            time = data.getCollectTime();
+            FrameAlignment f = tempFrames.get(time);
+            if (f == null)
+                f = new FrameAlignment(time);
+            f.features = data;
+            frames.put(time, f);
+        }
+
         return frames;
     }
 }
