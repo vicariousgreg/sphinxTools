@@ -30,7 +30,7 @@ public class Segmenter {
         }
 
         for (String line : BatchFile.getLines(batchPath)) {
-            System.out.println(BatchFile.getFilename(line);
+            System.out.println(BatchFile.getFilename(line));
             TranscriptAlignment t = SpeechTools.getTranscriptAlignment(line);
             for (Segment s : t.getSegments()) System.out.println(s);
             System.out.println();
