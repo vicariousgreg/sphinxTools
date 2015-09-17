@@ -1,4 +1,6 @@
 import java.io.File;
+import java.io.IOException;
+import java.io.InputStream;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
@@ -176,6 +178,10 @@ public class SpeechTools {
         return dmp;
     }
 
+    //////////////////////
+    /* Alignment tools. */
+    //////////////////////
+
     public static TranscriptAlignment getTranscriptAlignment(String batchLine) throws Exception {
         URL audioUrl = new File(BatchFile.getFilename(batchLine)).toURI().toURL();
         String transcript = BatchFile.getReference(batchLine);
@@ -201,10 +207,6 @@ public class SpeechTools {
                 getFeatures(audioUrl, false));
     }
 
-    //////////////////////
-    /* Alignment tools. */
-    //////////////////////
-
     /**
      * Creates a word alignment given audio and a transcript.
      * @param audioUrl audio location
@@ -213,5 +215,44 @@ public class SpeechTools {
      */
     public static List<WordResult> getWordAlignment(URL audioUrl, String transcript) throws Exception {
         return getSpeechAligner().align(audioUrl, transcript);
+    }
+
+    //////////////////////////
+    /* Transcription tools. */
+    //////////////////////////
+
+    public static String transcribe(URL audioUrl) throws IOException {
+        Configuration configuration = new Configuration();
+
+        configuration
+                .setAcousticModelPath("/audio/models/transcription/acoustic/models/en-us");
+        configuration
+                .setLanguageModelPath("/audio/models/transcription/language/models/en-us.lm");
+        configuration
+                .setDictionaryPath("/audio/models/transcription/dictionary/cmudict-en-us.dict");
+
+        StreamSpeechRecognizer recognizer = new StreamSpeechRecognizer(configuration);
+
+        // Simple recognition with generic model
+        InputStream stream = audioUrl.openStream();
+        stream.skip(44);
+
+        List<String> output = new ArrayList<String>();
+
+        SpeechResult result;
+        recognizer.startRecognition(stream);
+        while ((result = recognizer.getResult()) != null) {
+            output.add(result.getHypothesis());
+        }
+        recognizer.stopRecognition();
+
+        StringBuilder sb = new StringBuilder();
+        if (output.size() > 0) {
+            sb.append(output.get(0));
+            int index = 1;
+            while (index < output.size())
+                sb.append(" " + output.get(index));
+        }
+        return sb.toString();
     }
 }
