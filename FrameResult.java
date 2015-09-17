@@ -11,13 +11,14 @@ import edu.cmu.sphinx.api.*;
 import edu.cmu.sphinx.frontend.*;
 import edu.cmu.sphinx.result.WordResult;
 import edu.cmu.sphinx.linguist.HMMSearchState;
+import edu.cmu.sphinx.linguist.acoustic.*;
 import edu.cmu.sphinx.linguist.acoustic.tiedstate.*;
 import edu.cmu.sphinx.util.LogMath;
 
 public class FrameResult {
     public final long time;
     public final long mId;
-    public final int mId;
+    public final int state;
     public final Unit unit;
     public final Unit baseUnit;
 

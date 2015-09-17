@@ -34,6 +34,9 @@ public class Segmenter {
             TranscriptAlignment t = SpeechTools.getTranscriptAlignment(line);
             for (Segment s : t.getSegments()) System.out.println(s);
             System.out.println();
+
+            t = null;
+            System.gc();
         }
 
     }

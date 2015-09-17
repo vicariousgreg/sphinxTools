@@ -57,7 +57,7 @@ public class Segment {
         for (int i = 1; i < words.size(); ++i)
             sb.append(" " + words.get(i).word.toString());
 
-        return String.format("%f %f %s",
+        return String.format("%.2f %.2f %s",
                 getContextStart() / 1000.0, getContextEnd() / 1000.0, sb.toString());
     }
 

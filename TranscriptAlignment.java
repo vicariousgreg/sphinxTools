@@ -214,7 +214,7 @@ public class TranscriptAlignment {
 
         for (WordResult wr : wordResults) {
             stringResults.add(wr.getWord().getSpelling());
-       }
+        }
         
         LongTextAligner textAligner =
                 new LongTextAligner(stringResults, 2);
