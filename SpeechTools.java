@@ -206,27 +206,6 @@ public class SpeechTools {
     //////////////////////
 
     /**
-     * Creates a high level alignment, including word and signal alignment.
-     * @param audioUrl audio location
-     * @param transcriptPath transcript path
-     * @return alignment
-     */
-    public static Alignment getAlignment(URL audioUrl, String transcriptPath) throws Exception {
-        // Load transcript
-        Scanner scanner = new Scanner(new File(transcriptPath));  
-        scanner.useDelimiter("\\Z");  
-        String transcript = scanner.next();
-        scanner.close();
-
-        Context context = getContext();
-        context.setLocalProperty("trivialScorer->frontend", "unmarkedFrontEnd");
-
-        return new Alignment(getWordAlignment(audioUrl, transcript),
-                getFeatures(audioUrl, false),
-                getSpeechClassifiedData(audioUrl));
-    }
-
-    /**
      * Creates a word alignment given audio and a transcript.
      * @param audioUrl audio location
      * @param transcript transcript
