@@ -44,14 +44,6 @@ public class Test {
             System.exit(-1);
         }
 
-        Scanner scanner = new Scanner(new File(transcriptPath));  
-        scanner.useDelimiter("\\Z");  
-        String transcript = scanner.next();
-        scanner.close();
-
-        Context context = SpeechTools.getContext();
-        context.setLocalProperty("trivialScorer->frontend", "unmarkedFrontEnd");
-
         //System.out.println(SpeechTools.getWordAlignment(audioUrl, transcriptPath).size());
         //System.out.println(SpeechTools.getSignals(audioUrl).size());
 
@@ -65,7 +57,7 @@ public class Test {
         //al.printSegments();
         //System.out.println("***************");
         //al.printMergedSegments();
-        //
+
         TranscriptAlignment t = SpeechTools.getTranscriptAlignment(audioUrl, transcriptPath);
         for (FrameAlignment f : t.frames.values()) {
             System.out.println(f);
