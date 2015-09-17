@@ -1,15 +1,3 @@
-/*
- * Copyright 1999-2013 Carnegie Mellon University.
- * Portions Copyright 2004 Sun Microsystems, Inc.
- * Portions Copyright 2004 Mitsubishi Electric Research Laboratories.
- * All Rights Reserved.  Use is subject to license terms.
- *
- * See the file "license.terms" for information on usage and
- * redistribution of this file, and for a DISCLAIMER OF ALL
- * WARRANTIES.
- *
- */
-
 import java.io.File;
 import java.net.URL;
 import java.util.ArrayList;
@@ -33,11 +21,11 @@ import edu.cmu.sphinx.util.LogMath;
 import edu.cmu.sphinx.util.TimeFrame;
 
 public class WordAlignment {
-    public final Word word;
+    public final String word;
     public TimeFrame time;
     public final List<FrameAlignment> frames;
 
-    public WordAlignment(Word word, WordResult wr) {
+    public WordAlignment(String word, WordResult wr) {
         this.word = word;
         this.frames = new ArrayList<FrameAlignment>();
 
@@ -62,6 +50,6 @@ public class WordAlignment {
     public String toString() {
         String start = (time == null) ? "" : Long.toString(time.getStart());
         String end = (time == null) ? "" : Long.toString(time.getEnd());
-        return String.format("%10s %10s %20s", start, end, word.toString());
+        return String.format("%10s %10s %20s", start, end, word);
     }
 }

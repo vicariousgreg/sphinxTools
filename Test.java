@@ -1,15 +1,3 @@
-/*
- * Copyright 1999-2013 Carnegie Mellon University.
- * Portions Copyright 2004 Sun Microsystems, Inc.
- * Portions Copyright 2004 Mitsubishi Electric Research Laboratories.
- * All Rights Reserved.  Use is subject to license terms.
- *
- * See the file "license.terms" for information on usage and
- * redistribution of this file, and for a DISCLAIMER OF ALL
- * WARRANTIES.
- *
- */
-
 import java.io.File;
 import java.net.URL;
 import java.util.ArrayList;
@@ -35,19 +23,19 @@ public class Test {
         Context.setCustomConfig("config.xml");
 
         URL audioUrl = null;
-        String transcriptPath = null;
+        URL transcriptUrl = null;
         if (args.length > 1) {
             audioUrl = new File(args[0]).toURI().toURL();
-            transcriptPath = args[1];
+            transcriptUrl = new File(args[1]).toURI().toURL();
         } else {
             System.err.println("Usage: java Test <wav> <transcript>");
             System.exit(-1);
         }
 
-        //System.out.println(SpeechTools.getWordAlignment(audioUrl, transcriptPath).size());
+        //System.out.println(SpeechTools.getWordAlignment(audioUrl, transcriptUrl).size());
         //System.out.println(SpeechTools.getSignals(audioUrl).size());
 
-        //Alignment al = SpeechTools.getAlignment(audioUrl, transcriptPath);
+        //Alignment al = SpeechTools.getAlignment(audioUrl, transcriptUrl);
         //al.print();
         //al.dumpAlignment();
         //al.dumpWords();
@@ -58,7 +46,7 @@ public class Test {
         //System.out.println("***************");
         //al.printMergedSegments();
 
-        TranscriptAlignment t = SpeechTools.getTranscriptAlignment(audioUrl, transcriptPath);
+        TranscriptAlignment t = SpeechTools.getTranscriptAlignment(audioUrl, transcriptUrl);
         for (FrameAlignment f : t.frames.values()) {
             System.out.println(f);
         }

@@ -1,15 +1,3 @@
-/*
- * Copyright 1999-2013 Carnegie Mellon University.
- * Portions Copyright 2004 Sun Microsystems, Inc.
- * Portions Copyright 2004 Mitsubishi Electric Research Laboratories.
- * All Rights Reserved.  Use is subject to license terms.
- *
- * See the file "license.terms" for information on usage and
- * redistribution of this file, and for a DISCLAIMER OF ALL
- * WARRANTIES.
- *
- */
-
 import java.io.File;
 import java.net.URL;
 import java.util.ArrayList;
@@ -62,6 +50,7 @@ public class TranscriptAlignment {
         List<Segment> segments = new ArrayList<Segment>();
         List<TimeFrame> empty = getEmptyRegions(150);
 
+        // If there are no empty regions, return a single segment.
         if (empty.size() == 0) {
             Segment s = new Segment(null, new TimeFrame(0, this.lastFrame), null);
             s.words = this.words;
@@ -69,6 +58,7 @@ public class TranscriptAlignment {
             return segments;
         }
 
+        // Create segments from empty regions.
         for (int i = 1; i < empty.size(); ++i) {
             TimeFrame left = empty.get(i-1);
             TimeFrame right = empty.get(i);
@@ -79,12 +69,14 @@ public class TranscriptAlignment {
             segments.add(new Segment(left, time, right));
         }
 
+        // Add last one.
         TimeFrame last = empty.get(empty.size() - 1);
         segments.add(new Segment(
                     last,
                     new TimeFrame(last.getEnd(), this.lastFrame),
                     null));
 
+        // Assign words to segments.
         int index = 0;
         Segment curr = segments.get(index);
 
@@ -101,7 +93,16 @@ public class TranscriptAlignment {
             }
         }
 
-        return Segment.merge(segments, 5000);
+        List<Segment> output = new ArrayList<Segment>();
+
+        // Filter empty segments.
+        for (Segment s : segments)
+            if (s.words.size() > 0)
+                output.add(s);
+
+        // Merge segments, threshold = 5000ms.
+        output = Segment.merge(output, 5000);
+        return output;
     }
 
     /**
@@ -204,16 +205,14 @@ public class TranscriptAlignment {
         
         int[] aid = textAligner.align(words);
 
-        Dictionary dictionary = SpeechTools.getDictionary();
-        
         int lastId = -1;
         for (int i = 0; i < aid.length; ++i) {
             if (aid[i] == -1) {
                 Word word = null;
-                wordAlignments.add(new WordAlignment(dictionary.getWord(words.get(i)), null));
+                wordAlignments.add(new WordAlignment(words.get(i), null));
             } else {
                 WordResult wr = wordResults.get(aid[i]);
-                wordAlignments.add(new WordAlignment(wr.getWord(), wr));
+                wordAlignments.add(new WordAlignment(wr.getWord().toString(), wr));
                 lastId = aid[i];
             }
         }

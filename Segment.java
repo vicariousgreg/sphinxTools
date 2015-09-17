@@ -1,15 +1,3 @@
-/*
- * Copyright 1999-2013 Carnegie Mellon University.
- * Portions Copyright 2004 Sun Microsystems, Inc.
- * Portions Copyright 2004 Mitsubishi Electric Research Laboratories.
- * All Rights Reserved.  Use is subject to license terms.
- *
- * See the file "license.terms" for information on usage and
- * redistribution of this file, and for a DISCLAIMER OF ALL
- * WARRANTIES.
- *
- */
-
 import java.io.File;
 import java.net.URL;
 import java.util.ArrayList;
@@ -69,7 +57,8 @@ public class Segment {
         for (int i = 1; i < words.size(); ++i)
             sb.append(" " + words.get(i).word.toString());
 
-        return String.format("%d %d %s", getStart(), getEnd(), sb.toString());
+        return String.format("%f %f %s",
+                getContextStart() / 1000.0, getContextEnd() / 1000.0, sb.toString());
     }
 
     public static List<Segment> merge(List<Segment> segments, long threshold) {

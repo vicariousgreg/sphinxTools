@@ -1,15 +1,3 @@
-/*
- * Copyright 1999-2013 Carnegie Mellon University.
- * Portions Copyright 2004 Sun Microsystems, Inc.
- * Portions Copyright 2004 Mitsubishi Electric Research Laboratories.
- * All Rights Reserved.  Use is subject to license terms.
- *
- * See the file "license.terms" for information on usage and
- * redistribution of this file, and for a DISCLAIMER OF ALL
- * WARRANTIES.
- *
- */
-
 import java.io.File;
 import java.net.URL;
 import java.util.ArrayList;
@@ -29,6 +17,7 @@ import edu.cmu.sphinx.linguist.dictionary.Dictionary;
 import edu.cmu.sphinx.linguist.acoustic.tiedstate.*;
 import edu.cmu.sphinx.util.LogMath;
 import edu.cmu.sphinx.util.props.ConfigurationManager;
+import edu.cmu.sphinx.util.BatchFile;
 
 public class SpeechTools {
     private static final String ACOUSTIC_MODEL_PATH =
@@ -187,13 +176,22 @@ public class SpeechTools {
         return dmp;
     }
 
-    public static TranscriptAlignment getTranscriptAlignment(URL audioUrl, String transcriptPath) throws Exception {
+    public static TranscriptAlignment getTranscriptAlignment(String batchLine) throws Exception {
+        URL audioUrl = new File(BatchFile.getFilename(batchLine)).toURI().toURL();
+        String transcript = BatchFile.getReference(batchLine);
+        return getTranscriptAlignment(audioUrl, transcript);
+    }
+
+    public static TranscriptAlignment getTranscriptAlignment(URL audioUrl, URL transcriptUrl) throws Exception {
         // Load transcript
-        Scanner scanner = new Scanner(new File(transcriptPath));  
+        Scanner scanner = new Scanner(transcriptUrl.openStream());  
         scanner.useDelimiter("\\Z");  
         String transcript = scanner.next();
         scanner.close();
+        return getTranscriptAlignment(audioUrl, transcript);
+    }
 
+    public static TranscriptAlignment getTranscriptAlignment(URL audioUrl, String transcript) throws Exception {
         Context context = getContext();
         context.setLocalProperty("trivialScorer->frontend", "unmarkedFrontEnd");
 
