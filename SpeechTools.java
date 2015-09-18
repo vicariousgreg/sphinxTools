@@ -7,6 +7,7 @@ import java.util.List;
 import java.util.Scanner;
 
 import edu.cmu.sphinx.decoder.search.Token;
+import edu.cmu.sphinx.decoder.adaptation.*;
 import edu.cmu.sphinx.alignment.LongTextAligner;
 import edu.cmu.sphinx.alignment.USEnglishTokenizer;
 import edu.cmu.sphinx.api.*;
@@ -224,8 +225,20 @@ public class SpeechTools {
     /* Transcription tools. */
     //////////////////////////
 
-    public static String transcribe(URL audioUrl) throws IOException {
+    public static String transcribe(URL audioUrl) throws Exception {
+        return transcribe(audioUrl, null);
+    }
+
+    public static String transcribe(URL audioUrl, String transformPath) throws Exception {
+        if (transformPath == null && SpeechTools.recognizer != null) {
+            initializeRecognizer();
+        }
+
         StreamSpeechRecognizer recognizer = getRecognizer();
+
+        if (transformPath != null) {
+            recognizer.loadTransform(transformPath, 1);
+        }
 
         // Simple recognition with generic model
         InputStream stream = audioUrl.openStream();
