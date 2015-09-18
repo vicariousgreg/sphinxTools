@@ -35,10 +35,16 @@ public class TranscriptAlignment {
         this.words = getWordAlignments(transcript, wordResults);
         this.frames = getFrameAlignments(this.words, speechData, features);
         this.confusionTimeFrames = getConfusionTimeFrames(this.words);
-        this.lastFrame = Collections.max(frames.keySet());
 
         // Flag this transcript if no words could be aligned.
         this.badTranscript = (wordResults.size() == 0);
+
+        if (frames.keySet().size() != 0) {
+            this.lastFrame = Collections.max(frames.keySet());
+        } else {
+            this.badTranscript = true;
+            this.lastFrame = 0;
+        }
     }
 
     /**
@@ -170,6 +176,10 @@ public class TranscriptAlignment {
 
         for (FrameAlignment frame : frames.values()) {
             if (frame.isEmpty()) emptyFrames.add(frame);
+        }
+
+        if (emptyFrames.size() == 0) {
+            return nonSpeech;
         }
 
         long start = emptyFrames.get(0).time;

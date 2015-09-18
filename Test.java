@@ -55,6 +55,16 @@ public class Test {
         }
         for (Segment s : t.getSegments()) System.out.println(s);
 
+        t = SpeechTools.getTranscriptAlignment(audioUrl, transcriptUrl);
+        for (FrameAlignment f : t.frames.values()) {
+            System.out.println(f);
+        }
+        for (WordAlignment word : t.words) {
+            System.out.println(word);
+        }
+        for (Segment s : t.getSegments()) System.out.println(s);
+
+
         //SenoneDump dmp = SpeechTools.getSenoneDump(audioUrl);
         //dmp.print();
     }

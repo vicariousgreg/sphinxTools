@@ -148,7 +148,7 @@ public class SpeechTools {
         Context context = getContext();
         ConfigurationManager cm = context.getConfigurationManager();
 
-        FrontEnd frontEnd = cm.lookup("liveFrontEnd");
+        FrontEnd frontEnd = cm.lookup("unmarkedFrontEnd");
         context.setSpeechSource(audioUrl.openStream());
 
         Data data = null;
