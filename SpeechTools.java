@@ -30,6 +30,7 @@ public class SpeechTools {
     private static final String G2P_PATH =
             "/audio/models/transcription/en_us_nostress/model.fst.ser";
     private static Context context;
+    private static StreamSpeechRecognizer recognizer;
 
     ///////////////////
     /* Sphinx tools. */
@@ -81,6 +82,31 @@ public class SpeechTools {
         return aligner;
     }
 
+    public static StreamSpeechRecognizer getRecognizer() {
+        if (recognizer == null) {
+            initializeRecognizer();
+        }
+        return recognizer;
+    }
+
+    public static void initializeRecognizer() {
+        try {
+            Configuration configuration = new Configuration();
+
+            configuration
+                    .setAcousticModelPath("/audio/models/transcription/acoustic/models/en-us");
+            configuration
+                    .setLanguageModelPath("/audio/models/transcription/language/models/en-us.lm");
+            configuration
+                    .setDictionaryPath("/audio/models/transcription/dictionary/cmudict-en-us.dict");
+
+            recognizer = new StreamSpeechRecognizer(configuration);
+        } catch (Exception e) {
+            System.err.println(e);
+            System.exit(-1);
+        }
+    }
+
 
     /////////////////////////////////
     /* Low level extraction tools. */
@@ -111,41 +137,18 @@ public class SpeechTools {
 
 
     /**
-     * Extracts data signals from an input stream.
-     * @param audioUrl url of audio file
-     * @return list of signals
-     */
-    public static List<Signal> getSignals(URL audioUrl) throws Exception {
-        List<Signal> out = new ArrayList<Signal>();
-
-        Context context = getContext();
-        ConfigurationManager cm = context.getConfigurationManager();
-
-        FrontEnd frontEnd = cm.lookup("liveFrontEnd");
-        context.setSpeechSource(audioUrl.openStream());
-
-        Data data = null;
-        while ((data = frontEnd.getData()) != null) {
-            if (data instanceof Signal && !(data instanceof DataStartSignal) && !(data instanceof DataEndSignal)) {
-                out.add((Signal) data);
-            }
-        }
-        return out;
-    }
-
-    /**
      * Extracts feature data from an input stream.
      * @param audioUrl url of audio file
      * @param classifySpeech whether to include speech classification
      * @return list of feature data
      */
-    public static List<FloatData> getFeatures(URL audioUrl, boolean classifySpeech) throws Exception {
+    public static List<FloatData> getFeatures(URL audioUrl) throws Exception {
         List<FloatData> out = new ArrayList<FloatData>();
 
         Context context = getContext();
         ConfigurationManager cm = context.getConfigurationManager();
 
-        FrontEnd frontEnd = cm.lookup((classifySpeech) ? "liveFrontEnd" : "unmarkedFrontEnd");
+        FrontEnd frontEnd = cm.lookup("liveFrontEnd");
         context.setSpeechSource(audioUrl.openStream());
 
         Data data = null;
@@ -170,7 +173,7 @@ public class SpeechTools {
      */
     public static SenoneDump getSenoneDump(URL audioUrl) throws Exception {
         SenoneDump dmp = new SenoneDump(getContext().getLoader());
-        for (Data data : getFeatures(audioUrl, false)) {
+        for (Data data : getFeatures(audioUrl)) {
             if (data instanceof FloatData) {
                 dmp.addFrame(data);
             }
@@ -204,7 +207,7 @@ public class SpeechTools {
         return new TranscriptAlignment(transcript,
                 getWordAlignment(audioUrl, transcript), 
                 getSpeechClassifiedData(audioUrl),
-                getFeatures(audioUrl, false));
+                getFeatures(audioUrl));
     }
 
     /**
@@ -222,16 +225,7 @@ public class SpeechTools {
     //////////////////////////
 
     public static String transcribe(URL audioUrl) throws IOException {
-        Configuration configuration = new Configuration();
-
-        configuration
-                .setAcousticModelPath("/audio/models/transcription/acoustic/models/en-us");
-        configuration
-                .setLanguageModelPath("/audio/models/transcription/language/models/en-us.lm");
-        configuration
-                .setDictionaryPath("/audio/models/transcription/dictionary/cmudict-en-us.dict");
-
-        StreamSpeechRecognizer recognizer = new StreamSpeechRecognizer(configuration);
+        StreamSpeechRecognizer recognizer = getRecognizer();
 
         // Simple recognition with generic model
         InputStream stream = audioUrl.openStream();
@@ -243,6 +237,7 @@ public class SpeechTools {
         recognizer.startRecognition(stream);
         while ((result = recognizer.getResult()) != null) {
             output.add(result.getHypothesis());
+            System.out.println(result.getHypothesis());
         }
         recognizer.stopRecognition();
 
@@ -251,7 +246,8 @@ public class SpeechTools {
             sb.append(output.get(0));
             int index = 1;
             while (index < output.size())
-                sb.append(" " + output.get(index));
+                sb.append(" " + output.get(index++));
+
         }
         return sb.toString();
     }

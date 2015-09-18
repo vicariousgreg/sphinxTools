@@ -43,7 +43,7 @@
   <component name="speedTracker"
     type="edu.cmu.sphinx.instrumentation.SpeedTracker">
     <property name="showTimers" value="true"/>
-    <property name="frontend" value="unmarkedFrontEnd"/>
+    <property name="frontend" value="liveFrontEnd"/>
     <property name="recognizer" value="recognizer"/>
   </component>
                                           
@@ -179,7 +179,7 @@
   <component name="trivialScorer"
     type="edu.cmu.sphinx.decoder.scorer.ThreadedAcousticScorer">
     <property name="frontend" value="liveFrontEnd"/>
-    <property name="numThreads" value="4"/>
+    <property name="numThreads" value="12"/>
     <property name="isCpuRelative" value="false"/>
     <property name="threadPriority" value="10"/>
   </component>
@@ -350,7 +350,6 @@
     </propertylist>
   </component>
 
-  <!-- Frontend that does not perform speech marking -->
   <component name="unmarkedFrontEnd" type="edu.cmu.sphinx.frontend.FrontEnd">
     <propertylist name="pipeline">
       <item>dataSource </item>
@@ -364,6 +363,7 @@
       <item>featureTransform2 </item>
     </propertylist>
   </component>
+
 
   <!-- Frontend that dumps speech/non-speech classification -->
   <component name="speechFrontEnd" type="edu.cmu.sphinx.frontend.FrontEnd">
@@ -392,51 +392,62 @@
     type="edu.cmu.sphinx.frontend.endpoint.SpeechMarker" >
   </component>
 
+  <!-- 1 -->
   <component name="preemphasizer"
-    type="edu.cmu.sphinx.frontend.filter.Preemphasizer"/>
-  <component name="preemphasizer2"
     type="edu.cmu.sphinx.frontend.filter.Preemphasizer"/>
 
   <component name="windower"
     type="edu.cmu.sphinx.frontend.window.RaisedCosineWindower"/>
-  <component name="windower2"
-    type="edu.cmu.sphinx.frontend.window.RaisedCosineWindower"/>
 
   <component name="fft"
-    type="edu.cmu.sphinx.frontend.transform.DiscreteFourierTransform"/>
-  <component name="fft2"
     type="edu.cmu.sphinx.frontend.transform.DiscreteFourierTransform"/>
 
   <component name="autoCepstrum"
     type="edu.cmu.sphinx.frontend.AutoCepstrum">
     <property name="loader" value="acousticModelLoader"/>
   </component>
-  <component name="autoCepstrum2"
-    type="edu.cmu.sphinx.frontend.AutoCepstrum">
-    <property name="loader" value="acousticModelLoader"/>
-  </component>
 
   <component name="batchCMN"
-    type="edu.cmu.sphinx.frontend.feature.BatchCMN"/>
-  <component name="batchCMN2"
     type="edu.cmu.sphinx.frontend.feature.BatchCMN"/>
 
   <component name="liveCMN"
     type="edu.cmu.sphinx.frontend.feature.LiveCMN"/>
-  <component name="liveCMN2"
-    type="edu.cmu.sphinx.frontend.feature.LiveCMN"/>
 
   <component name="featureExtraction"
-    type="edu.cmu.sphinx.frontend.feature.DeltasFeatureExtractor"/>
-  <component name="featureExtraction2"
     type="edu.cmu.sphinx.frontend.feature.DeltasFeatureExtractor"/>
 
   <component name="featureTransform"
     type="edu.cmu.sphinx.frontend.feature.FeatureTransform">
     <property name="loader" value="acousticModelLoader"/>
   </component>
+
+  <!-- 2 -->
+  <component name="preemphasizer2"
+    type="edu.cmu.sphinx.frontend.filter.Preemphasizer"/>
+
+  <component name="windower2"
+    type="edu.cmu.sphinx.frontend.window.RaisedCosineWindower"/>
+
+  <component name="fft2"
+    type="edu.cmu.sphinx.frontend.transform.DiscreteFourierTransform"/>
+
+  <component name="autoCepstrum2"
+    type="edu.cmu.sphinx.frontend.AutoCepstrum">
+    <property name="loader" value="acousticModelLoader"/>
+  </component>
+
+  <component name="batchCMN2"
+    type="edu.cmu.sphinx.frontend.feature.BatchCMN"/>
+
+  <component name="liveCMN2"
+    type="edu.cmu.sphinx.frontend.feature.LiveCMN"/>
+
+  <component name="featureExtraction2"
+    type="edu.cmu.sphinx.frontend.feature.DeltasFeatureExtractor"/>
+
   <component name="featureTransform2"
     type="edu.cmu.sphinx.frontend.feature.FeatureTransform">
     <property name="loader" value="acousticModelLoader"/>
   </component>
+
 </config>

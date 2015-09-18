@@ -33,8 +33,15 @@ public class Evaluator {
         NISTAlign aligner = new NISTAlign(true, true);
 
         for (String line : BatchFile.getLines(batchPath)) {
+            System.out.println("Processing... " + BatchFile.getFilename(line));
             URL audioUrl = new File(BatchFile.getFilename(line)).toURI().toURL();
             String transcript = BatchFile.getReference(line);
+
+            StringBuilder sb = new StringBuilder();
+            for (String word : new USEnglishTokenizer().expand(transcript)) {
+                sb.append(word + " ");
+            }
+            transcript = sb.toString();
 
             String hypothesis = SpeechTools.transcribe(audioUrl);
             aligner.align(transcript, hypothesis);

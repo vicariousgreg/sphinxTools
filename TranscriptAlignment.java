@@ -67,6 +67,12 @@ public class TranscriptAlignment {
             return segments;
         }
 
+        TimeFrame first = empty.get(0);
+        segments.add(new Segment(
+                    null,
+                    new TimeFrame(0, first.getStart()),
+                    first));
+
         // Create segments from empty regions.
         for (int i = 1; i < empty.size(); ++i) {
             TimeFrame left = empty.get(i-1);
