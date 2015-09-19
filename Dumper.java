@@ -8,7 +8,6 @@ import edu.cmu.sphinx.decoder.search.Token;
 import edu.cmu.sphinx.alignment.LongTextAligner;
 import edu.cmu.sphinx.alignment.USEnglishTokenizer;
 import edu.cmu.sphinx.api.*;
-import edu.cmu.sphinx.decoder.adaptation.*;
 import edu.cmu.sphinx.frontend.*;
 import edu.cmu.sphinx.frontend.endpoint.SpeechClassifiedData;
 import edu.cmu.sphinx.result.WordResult;
@@ -18,7 +17,7 @@ import edu.cmu.sphinx.util.LogMath;
 import edu.cmu.sphinx.util.TimeFrame;
 import edu.cmu.sphinx.util.BatchFile;
 
-public class Adapter {
+public class Dumper {
     public static void main(String args[]) throws Exception {
         Context.setCustomConfig("/audio/tools/transcription/jar/config.xml");
 
@@ -26,47 +25,26 @@ public class Adapter {
         if (args.length > 0) {
             batchPath = args[0];
         } else {
-            System.err.println("Usage: java Segmenter <batch> [transformPath]");
+            System.err.println("Usage: java Segmenter <batch> [transform]");
             System.exit(-1);
         }
 
-        String transformPath = "test.transform";
         if (args.length > 1) {
-            transformPath = args[1];
+            String transformPath = args[1];
+            System.err.println("Loading transform from... " + transformPath);
+            SpeechTools.setTransform(transformPath);
         }
-
-        ClusteredDensityFileData clusters =
-            new ClusteredDensityFileData(SpeechTools.getContext().getLoader(), 1);
-        Stats stats =
-            new Stats(SpeechTools.getContext().getLoader(), clusters);
 
         for (String line : BatchFile.getLines(batchPath)) {
             System.out.println(BatchFile.getFilename(line));
             TranscriptAlignment t = SpeechTools.getTranscriptAlignment(line);
+            for (FrameAlignment f : t.frames.values()) System.out.println(f);
+            for (WordAlignment w : t.words) System.out.println(w);
+            for (Segment s : t.getSegments()) System.out.println(s);
+            System.out.println();
 
-            List<FloatData> features = new ArrayList<FloatData>();
-            List<Integer> mids = new ArrayList<Integer>();
-
-            for (FrameAlignment f : t.frames.values()) {
-                if (f.features != null && f.mId != null) {
-                    features.add(f.features);
-                    mids.add(f.mId);
-
-                    System.out.printf("%d %d\n", f.time, f.mId);
-                }
-            }
-            stats.collect(features, mids);
             t = null;
             System.gc();
-        }
-
-        Transform transform = stats.createTransform();
-
-        if (transform == null) {
-            System.out.println("Not enough data for transform!");
-        } else {
-            transform.store(transformPath, 0);
-            System.out.println("Writing transform to " + transformPath);
         }
 
     }

@@ -23,7 +23,6 @@ public class Evaluator {
         Context.setCustomConfig("/audio/tools/transcription/jar/config.xml");
 
         String batchPath = null;
-        String transformPath = null;
         if (args.length > 0) {
             batchPath = args[0];
         } else {
@@ -32,8 +31,9 @@ public class Evaluator {
         }
 
         if (args.length > 1) {
-            transformPath = args[1];
-            System.out.println("Loading transform from... " + transformPath);
+            String transformPath = args[1];
+            System.err.println("Loading transform from... " + transformPath);
+            SpeechTools.setTransform(transformPath);
         }
 
         NISTAlign aligner = new NISTAlign(true, true);
@@ -49,7 +49,7 @@ public class Evaluator {
             }
             transcript = sb.toString();
 
-            String hypothesis = SpeechTools.transcribe(audioUrl, transformPath);
+            String hypothesis = SpeechTools.transcribe(audioUrl);
             aligner.align(transcript, hypothesis);
             System.gc();
         }

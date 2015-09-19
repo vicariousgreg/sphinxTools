@@ -32,6 +32,7 @@ public class SpeechTools {
             "/audio/models/transcription/en_us_nostress/model.fst.ser";
     private static Context context;
     private static StreamSpeechRecognizer recognizer;
+    private static String transformPath;
 
     ///////////////////
     /* Sphinx tools. */
@@ -53,6 +54,13 @@ public class SpeechTools {
         config.setDictionaryPath(DICTIONARY_PATH);
         try {
             context = new Context(config);
+            if (transformPath != null) {
+                ClusteredDensityFileData clusters = new ClusteredDensityFileData(context.getLoader(), 1);
+                Transform transform = new Transform((Sphinx3Loader)context.getLoader(), 1);
+                transform.load(transformPath);
+                context.getLoader().update(transform, clusters);
+            }
+
         } catch (Exception e) {
             System.err.println(e);
             System.exit(-1);
@@ -76,6 +84,7 @@ public class SpeechTools {
         try {
             aligner = new SpeechAligner(ACOUSTIC_MODEL_PATH, DICTIONARY_PATH, G2P_PATH);
             aligner.setTokenizer(new USEnglishTokenizer());
+            if (transformPath != null) aligner.setTransform(transformPath);
         } catch (Exception e) {
             System.err.println(e);
             System.exit(-1);
@@ -90,6 +99,10 @@ public class SpeechTools {
         return recognizer;
     }
 
+    public static void setTransform(String transformPath) throws Exception {
+        SpeechTools.transformPath = transformPath;
+    }
+
     public static void initializeRecognizer() {
         try {
             Configuration configuration = new Configuration();
@@ -102,6 +115,7 @@ public class SpeechTools {
                     .setDictionaryPath("/audio/models/transcription/dictionary/cmudict-en-us.dict");
 
             recognizer = new StreamSpeechRecognizer(configuration);
+            if (transformPath != null) recognizer.loadTransform(transformPath, 1);
         } catch (Exception e) {
             System.err.println(e);
             System.exit(-1);
@@ -119,6 +133,7 @@ public class SpeechTools {
      * @return list of speech classified data
      */
     public static List<SpeechClassifiedData> getSpeechClassifiedData(URL audioUrl) throws Exception {
+        System.out.println("Get speech data...");
         List<SpeechClassifiedData> out = new ArrayList<SpeechClassifiedData>();
 
         Context context = getContext();
@@ -144,6 +159,7 @@ public class SpeechTools {
      * @return list of feature data
      */
     public static List<FloatData> getFeatures(URL audioUrl) throws Exception {
+        System.out.println("Get features...");
         List<FloatData> out = new ArrayList<FloatData>();
 
         Context context = getContext();
@@ -218,6 +234,7 @@ public class SpeechTools {
      * @return word alignment list
      */
     public static List<WordResult> getWordAlignment(URL audioUrl, String transcript) throws Exception {
+        System.out.println("Get word alignment...");
         return getSpeechAligner().align(audioUrl, transcript);
     }
 
@@ -226,19 +243,7 @@ public class SpeechTools {
     //////////////////////////
 
     public static String transcribe(URL audioUrl) throws Exception {
-        return transcribe(audioUrl, null);
-    }
-
-    public static String transcribe(URL audioUrl, String transformPath) throws Exception {
-        if (transformPath == null && SpeechTools.recognizer != null) {
-            initializeRecognizer();
-        }
-
         StreamSpeechRecognizer recognizer = getRecognizer();
-
-        if (transformPath != null) {
-            recognizer.loadTransform(transformPath, 1);
-        }
 
         // Simple recognition with generic model
         InputStream stream = audioUrl.openStream();
