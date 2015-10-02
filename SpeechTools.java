@@ -55,14 +55,14 @@ public class SpeechTools {
         try {
             context = new Context(config);
             if (transformPath != null) {
-                ClusteredDensityFileData clusters = new ClusteredDensityFileData(context.getLoader(), 1);
-                Transform transform = new Transform((Sphinx3Loader)context.getLoader(), 1);
+                ClusteredDensityFileData clusters = new ClusteredDensityFileData(context.getLoader(), 2);
+                Transform transform = new Transform((Sphinx3Loader)context.getLoader(), 2);
                 transform.load(transformPath);
                 context.getLoader().update(transform, clusters);
             }
 
         } catch (Exception e) {
-            System.err.println(e);
+            e.printStackTrace(System.err);
             System.exit(-1);
         }
     }
@@ -73,7 +73,7 @@ public class SpeechTools {
             dictionary = ((Dictionary) getContext().getConfigurationManager().lookup("dictionary"));
             dictionary.allocate();
         } catch (Exception e) {
-            System.err.println(e);
+            e.printStackTrace(System.err);
             System.exit(-1);
         }
         return dictionary;
@@ -86,7 +86,7 @@ public class SpeechTools {
             aligner.setTokenizer(new USEnglishTokenizer());
             if (transformPath != null) aligner.setTransform(transformPath);
         } catch (Exception e) {
-            System.err.println(e);
+            e.printStackTrace(System.err);
             System.exit(-1);
         }
         return aligner;
@@ -117,7 +117,7 @@ public class SpeechTools {
             recognizer = new StreamSpeechRecognizer(configuration);
             if (transformPath != null) recognizer.loadTransform(transformPath, 1);
         } catch (Exception e) {
-            System.err.println(e);
+            e.printStackTrace(System.err);
             System.exit(-1);
         }
     }
@@ -133,7 +133,7 @@ public class SpeechTools {
      * @return list of speech classified data
      */
     public static List<SpeechClassifiedData> getSpeechClassifiedData(URL audioUrl) throws Exception {
-        System.out.println("Get speech data...");
+        //System.out.println("Get speech data...");
         List<SpeechClassifiedData> out = new ArrayList<SpeechClassifiedData>();
 
         Context context = getContext();
@@ -159,7 +159,7 @@ public class SpeechTools {
      * @return list of feature data
      */
     public static List<FloatData> getFeatures(URL audioUrl) throws Exception {
-        System.out.println("Get features...");
+        //System.out.println("Get features...");
         List<FloatData> out = new ArrayList<FloatData>();
 
         Context context = getContext();
@@ -234,7 +234,7 @@ public class SpeechTools {
      * @return word alignment list
      */
     public static List<WordResult> getWordAlignment(URL audioUrl, String transcript) throws Exception {
-        System.out.println("Get word alignment...");
+        //System.out.println("Get word alignment...");
         return getSpeechAligner().align(audioUrl, transcript);
     }
 
