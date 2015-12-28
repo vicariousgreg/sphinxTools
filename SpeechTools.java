@@ -55,8 +55,8 @@ public class SpeechTools {
         try {
             context = new Context(config);
             if (transformPath != null) {
-                ClusteredDensityFileData clusters = new ClusteredDensityFileData(context.getLoader(), 2);
-                Transform transform = new Transform((Sphinx3Loader)context.getLoader(), 2);
+                ClusteredDensityFileData clusters = new ClusteredDensityFileData(context.getLoader(), 1);
+                Transform transform = new Transform((Sphinx3Loader)context.getLoader(), 1);
                 transform.load(transformPath);
                 context.getLoader().update(transform, clusters);
             }
@@ -101,6 +101,7 @@ public class SpeechTools {
 
     public static void setTransform(String transformPath) throws Exception {
         SpeechTools.transformPath = transformPath;
+        initializeRecognizer();
     }
 
     public static void initializeRecognizer() {
@@ -243,6 +244,7 @@ public class SpeechTools {
     //////////////////////////
 
     public static String transcribe(URL audioUrl) throws Exception {
+        initializeRecognizer();
         StreamSpeechRecognizer recognizer = getRecognizer();
 
         // Simple recognition with generic model

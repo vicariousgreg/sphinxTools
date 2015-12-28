@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Scanner;
 import java.io.DataOutputStream;
+import java.io.FileOutputStream;
 
 import edu.cmu.sphinx.decoder.search.Token;
 import edu.cmu.sphinx.alignment.LongTextAligner;
@@ -30,10 +31,12 @@ public class FeatureDumper {
             System.exit(-1);
         }
 
-        DataOutputStream os = new DataOutputStream(System.out);
 
         for (String line : BatchFile.getLines(batchPath)) {
             System.out.println(BatchFile.getFilename(line));
+            String fileName = BatchFile.getFilename(line).replace("wav", "feat");
+            DataOutputStream os = new DataOutputStream(new FileOutputStream(new File(fileName)));
+
             TranscriptAlignment t = SpeechTools.getTranscriptAlignment(line);
             for (FrameAlignment f : t.frames.values()) {
                 if (f.mId != null) {
@@ -45,10 +48,11 @@ public class FeatureDumper {
                         sb.append(String.format(" %f", val));
                         os.writeFloat(val);
                     }
-                    //os.writeChar('\n');
+                    //os.writeChar(' ');
                     //System.out.printf(sb.toString() + "\n");
                 }
             }
+            os.close();
             System.out.println();
 
             t = null;

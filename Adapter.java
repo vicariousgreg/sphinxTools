@@ -26,7 +26,7 @@ public class Adapter {
         if (args.length > 0) {
             batchPath = args[0];
         } else {
-            System.err.println("Usage: java Segmenter <batch> [transformPath]");
+            System.err.println("Usage: java Adapter <batch> [transformPath]");
             System.exit(-1);
         }
 
@@ -36,17 +36,27 @@ public class Adapter {
         }
 
         ClusteredDensityFileData clusters =
-            new ClusteredDensityFileData(SpeechTools.getContext().getLoader(), 2);
+            new ClusteredDensityFileData(SpeechTools.getContext().getLoader(), 1);
         Stats stats =
             new Stats(SpeechTools.getContext().getLoader(), clusters);
 
         for (String line : BatchFile.getLines(batchPath)) {
-            System.out.println(BatchFile.getFilename(line));
-            TranscriptAlignment t = SpeechTools.getTranscriptAlignment(line);
+            String fileName = BatchFile.getFilename(line);
+            System.out.println(fileName);
+
+            String featName = fileName.substring(0, fileName.lastIndexOf('.')) + ".feat";
 
             List<FloatData> features = new ArrayList<FloatData>();
             List<Integer> mids = new ArrayList<Integer>();
 
+            //TranscriptAlignment t = SpeechTools.getTranscriptAlignment(line);
+            for (FeatureReader.LabelledFeature f : FeatureReader.loadFeatures(featName)) {
+                //System.out.println(f);
+                features.add(f.data);
+                mids.add(f.mId);
+            }
+
+            /*
             for (FrameAlignment f : t.frames.values()) {
                 if (f.features != null && f.mId != null) {
                     features.add(f.features);
@@ -55,9 +65,10 @@ public class Adapter {
                     System.out.printf("%d %d\n", f.time, f.mId);
                 }
             }
+            */
             stats.collect(features, mids);
-            t = null;
-            System.gc();
+            //t = null;
+            //System.gc();
         }
 
         Transform transform = stats.createTransform();

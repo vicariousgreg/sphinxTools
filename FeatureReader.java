@@ -7,6 +7,7 @@ import java.io.DataOutputStream;
 import java.io.DataInputStream;
 import java.io.FileInputStream;
 import java.io.EOFException;
+import java.io.IOException;
 
 import edu.cmu.sphinx.decoder.search.Token;
 import edu.cmu.sphinx.alignment.LongTextAligner;
@@ -33,7 +34,15 @@ public class FeatureReader {
             System.exit(-1);
         }
 
-        DataInputStream is = new DataInputStream(new FileInputStream(new File(featureFile)));
+        for (LabelledFeature f : loadFeatures(featureFile)) {
+            System.out.println(f);
+        }
+    }
+
+    public static List<LabelledFeature> loadFeatures(String fileName) throws IOException {
+        DataInputStream is = new DataInputStream(new FileInputStream(new File(fileName)));
+        List<LabelledFeature> labelledFeatures = new ArrayList<LabelledFeature>();
+
         while (true) {
             try {
                 int mId = is.readInt();
@@ -44,15 +53,36 @@ public class FeatureReader {
                     features.add(is.readFloat());
                 }
 
-                StringBuilder sb = new StringBuilder(String.format("%d", mId));
-                for (float val : features) {
-                    sb.append(String.format(" %f", val));
-                }
-
-                System.out.println(sb.toString());
+                labelledFeatures.add(new LabelledFeature(mId, features));
             } catch (EOFException e) {
-                System.exit(0);
+                break;
             }
+        }
+        return labelledFeatures;
+    }
+
+    public static class LabelledFeature {
+        public final int mId;
+        public final FloatData data;
+
+        public LabelledFeature(int mId, List<Float> features) {
+            this.mId = mId;
+
+            float[] arr = new float[features.size()];
+            int i = 0;
+            for (Float val : features) {
+                arr[i++] = val;
+            }
+
+            this.data = new FloatData(arr, 16000, 0);
+        }
+
+        public String toString() {
+            StringBuilder sb = new StringBuilder(String.format("%d", this.mId));
+            for (float val : this.data.getValues()) {
+                sb.append(String.format(" %f", val));
+            }
+            return sb.toString();
         }
     }
 }
